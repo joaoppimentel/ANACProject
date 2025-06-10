@@ -1,15 +1,16 @@
 import streamlit as st
-from utils.database import execute_query ,create_tables, fill_tables
+from utils.database import create_tables, fill_tables
 
 def main():
-    st.set_page_config(page_title="Salários", layout="wide")
+    st.set_page_config(page_title="ANAC", layout="wide")
 
     create_tables()
-    fill_tables()
+    # fill_tables()
 
-    table_anac = st.Page("./frontend/table_anac.py", title="Tabela ANAC", icon="✈️", default=True)
+    tables = st.Page("./frontend/tables.py", title="Tabela ANAC", icon="✈️", default=True)
+    graphs = st.Page("./frontend/graphs.py", title="Gráficos ANAC", icon="📈")
 
-    pg = st.navigation([table_anac,])
+    pg = st.navigation([tables, graphs])
     pg.run()
 
 
