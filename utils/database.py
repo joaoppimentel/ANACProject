@@ -48,7 +48,7 @@ def execute_query(query, params=None, fetch=False, return_columns=False, df=Fals
         print(f"Erro ao executar a query: {e}")
         return None
     
-def getAll(table, fields=["*"], filters=[]):
+def get_all(table, fields=["*"], filters=[]):
     fields = ", ".join(fields)
     query = f"SELECT {fields} FROM {table}"
     if filters:
