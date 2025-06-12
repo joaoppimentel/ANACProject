@@ -48,6 +48,14 @@ def execute_query(query, params=None, fetch=False, return_columns=False, df=Fals
         print(f"Erro ao executar a query: {e}")
         return None
     
+def get_all(table, fields=["*"], filters=[]):
+    fields = ", ".join(fields)
+    query = f"SELECT {fields} FROM {table}"
+    if filters:
+        query += " WHERE "+ format_filters(filters)
+    df = execute_query(query, df=True)
+    return df
+    
 def create_tables():
     execute_query('''
     CREATE TABLE IF NOT EXISTS empresas (
@@ -328,6 +336,9 @@ def get_types(table):
 
 def format_filters(filters, suffix=""):
     formated = []
-    for c, v in filters.items():
-        formated.append((f"{c+suffix} = '{v}'"))
+    if isinstance(filters, dict):
+        for c, v in filters.items():
+            formated.append((f"{c+suffix} = '{v}'"))
+    else:
+        formated = filters
     return " AND ".join(formated)

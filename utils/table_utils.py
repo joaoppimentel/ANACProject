@@ -1,30 +1,14 @@
 import streamlit as st
 from unidecode import unidecode
-from utils.database import execute_query, format_filters, get_types
+from utils.database import execute_query, format_filters, get_types, get_all
 
-def raw_tables():
+def render_tables():
     filters = sidebar_filters()
 
-    st.header("Tabela Aeroportos")
-    query = "SELECT * FROM aeroportos"
-    if filters['aero']:
-        query += " WHERE "+ format_filters(filters["aero"])
-    df = execute_query(query, df=True)
-    st.dataframe(df, use_container_width=True, hide_index=True)
-    st.subheader("Aeroportos Encontrados: "+str(len(df)))
-    st.divider()
+    print_table("aeroportos", filters['aero'])
 
-    st.header("Tabela Empresas")
-    query = "SELECT * FROM empresas"
-    if filters['emp']:
-        query += " WHERE "+ format_filters(filters["emp"])
-    df = execute_query(query, df=True)
-    st.dataframe(df, use_container_width=True, hide_index=True)
-    st.subheader("Empresas Encontradas: "+str(len(df)))
-    st.divider()
+    print_table("empresas", filters['emp'])
 
-    st.header("Tabela Completa")
-    query = "SELECT * FROM RelatorioVoosDetalhado"
     voos_filter = []
     if filters["aero"]:
         origem_ft = format_filters(filters["aero"], suffix="_aeroporto_origem")
@@ -37,12 +21,18 @@ def raw_tables():
     if filters['voos']:
         voos_filter.append(format_filters(filters["voos"]))
             
-    if voos_filter:
-        query += " WHERE "+ " AND ".join(voos_filter)
-    df = execute_query(query, df=True)
+    print_table("RelatorioVoosDetalhado", voos_filter, "Voos")
+
+
+def print_table(table, filters, name=""):
+    if not name:
+        name = table.capitalize()
+    st.header(f"Tabela {name}")
+    df = get_all(table, filters=filters)
     st.dataframe(df, use_container_width=True, hide_index=True)
-    st.subheader("Voos Encontrados: "+str(len(df)))
+    st.subheader(f"Registros de {name} Encontrados : "+str(len(df)))
     st.divider()
+
 
 def sidebar_filters():
     with st.sidebar:
