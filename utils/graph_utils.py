@@ -188,6 +188,7 @@ def carregar_dados():
         "BAGAGEM (KG)",
         "ASSENTOS"
     ]
+    
     for col in cols_to_numeric:
         if col in df.columns:
             df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
@@ -206,11 +207,7 @@ def aplicar_filtro_mensal(df):
         df = df[df["MÊS"] == mes_selecionado]
     return df, mes_selecionado
 
-
 def mostrar_comparativo_mensal_percentual(df):
-    import pandas as pd
-    import streamlit as st
-    from sklearn.preprocessing import MinMaxScaler
 
     meses_disponiveis = sorted(df['MÊS'].unique())
     df = df[df["MÊS"].isin(meses_disponiveis)]
