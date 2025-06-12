@@ -4,22 +4,22 @@ import streamlit as st
 from sklearn.preprocessing import MinMaxScaler
 
 def calcular_total_passageiros(df):
-    return df["PASSAGEIROS PAGOS"].sum() + df["PASSAGEIROS GRÁTIS"].sum()
+    return df["passageiros_pagos"].sum() + df["passageiros_gratis"].sum()
 
 def calcular_total_voos(df):
-    return df["DECOLAGENS"].sum()
+    return df["decolagens"].sum()
 
 def calcular_total_horas_voadas(df):
-    return pd.to_numeric(df["HORAS VOADAS"], errors="coerce").fillna(0).sum()
+    return pd.to_numeric(df["horas_voadas"], errors="coerce").fillna(0).sum()
 
 def calcular_total_combustivel(df):
-    return df["COMBUSTÍVEL (LITROS)"].sum()
+    return df["combustivel_litros"].sum()
 
 def calcular_total_bagagem(df):
-    return df["BAGAGEM (KG)"].sum()
+    return df["bagagem_kg"].sum()
 
 def calcular_total_empresas(df):
-    return df["EMPRESA (NOME)"].nunique()
+    return df["nome_empresa"].nunique()
 
 def media_passageiro_voo(df):
     total_passageiros = calcular_total_passageiros(df)
@@ -36,27 +36,27 @@ def media_combustivel_voo(df):
     return total_combustivel / total_voos
 
 def calcular_total_aeroportos(df):
-    return df["AEROPORTO DE ORIGEM (NOME)"].nunique()
+    return df["nome_aeroporto_origem"].nunique()
 
 def  calcular_total_distancia(df):
-    return df["DISTÂNCIA VOADA (KM)"].sum()
+    return df["distancia_voada_km"].sum()
 
 def calcular_carga_total(df):
-    return (df["CARGA PAGA (KG)"] + df["CARGA GRÁTIS (KG)"] + df["CORREIO (KG)"]).sum()
+    return (df["carga_paga_kg"] + df["carga_gratis_kg"] + df["correio_kg"]).sum()
 
 def calcular_correio_total(df):
-    return df["CORREIO (KG)"].sum()
+    return df["correio_kg"].sum()
 
 def grafico_natureza_voos(df):
-    contagem = df["NATUREZA"].value_counts().reset_index()
+    contagem = df["natureza"].value_counts().reset_index()
     contagem.columns = ["Tipo de Voo", "Quantidade"]
     fig = px.pie(contagem, names="Tipo de Voo", values="Quantidade", title="Distribuição de Voos por Natureza")
     st.plotly_chart(fig)
 
 def grafico_assentos_usados(df):
-    df["ASSENTOS"] = pd.to_numeric(df["ASSENTOS"], errors="coerce").fillna(0)
-    usados = df["PASSAGEIROS PAGOS"] + df["PASSAGEIROS GRÁTIS"]
-    totais = df["ASSENTOS"]
+    df["assentos"] = pd.to_numeric(df["assentos"], errors="coerce").fillna(0)
+    usados = df["passageiros_pagos"] + df["passageiros_gratis"]
+    totais = df["assentos"]
 
     media_ocupados = usados.mean()
     media_totais = totais.mean()
@@ -71,7 +71,7 @@ def grafico_assentos_usados(df):
     st.plotly_chart(fig)
 
 def grafico_destino_por_continente(df):
-    contagem = df["AEROPORTO DE DESTINO (CONTINENTE)"].value_counts().reset_index()
+    contagem = df["continente_aeroporto_destino"].value_counts().reset_index()
     contagem.columns = ["Continente de Destino", "Quantidade de Voos"]
 
     fig = px.pie(contagem,
@@ -82,7 +82,7 @@ def grafico_destino_por_continente(df):
     st.plotly_chart(fig)
 
 def grafico_voos_por_empresa(df, top_n= 3):
-    voos_por_empresa = df.groupby("EMPRESA (NOME)")["DECOLAGENS"].sum().sort_values(ascending=False)
+    voos_por_empresa = df.groupby("nome_empresa")["decolagens"].sum().sort_values(ascending=False)
 
     top_empresas = voos_por_empresa.head(top_n)
     outras = voos_por_empresa.iloc[top_n:].sum()
@@ -98,8 +98,8 @@ def grafico_voos_por_empresa(df, top_n= 3):
     st.plotly_chart(fig)
 
 def grafico_distribuicao_passageiros(df):
-    pagos = df["PASSAGEIROS PAGOS"].sum()
-    gratis = df["PASSAGEIROS GRÁTIS"].sum()
+    pagos = df["passageiros_pagos"].sum()
+    gratis = df["passageiros_gratis"].sum()
 
     dados = pd.DataFrame({
         "Tipo de Passageiro": ["Pagos", "Grátis"],
@@ -110,21 +110,21 @@ def grafico_distribuicao_passageiros(df):
     st.plotly_chart(fig)
 
 def grafico_grupo_voo(df):
-    dados = df.groupby(["NATUREZA", "GRUPO DE VOO"]).size().reset_index(name="Quantidade")
-    fig = px.sunburst(dados, path=["NATUREZA", "GRUPO DE VOO"], values="Quantidade",
+    dados = df.groupby(["natureza", "grupo_voo"]).size().reset_index(name="Quantidade")
+    fig = px.sunburst(dados, path=["natureza", "grupo_voo"], values="Quantidade",
     title="Distribuição por Natureza e Grupo de Voo")
     st.plotly_chart(fig)
 
 def grafico_valor_carga(df):
     dados = pd.DataFrame({
     "Tipo de Carga": ["Paga", "Grátis"],
-    "Quantidade": [df["CARGA PAGA (KG)"].sum(), df["CARGA GRÁTIS (KG)"].sum()]
+    "Quantidade": [df["carga_paga_kg"].sum(), df["carga_gratis_kg"].sum()]
 })
     fig = px.pie(dados, names="Tipo de Carga", values="Quantidade", title="Distribuição da Carga Transportada")
     st.plotly_chart(fig)
 
 def grafico_empresa_nacionalidade(df):
-    dados = df["EMPRESA (NACIONALIDADE)"].value_counts().reset_index()
+    dados = df["nacionalidade_empresa"].value_counts().reset_index()
     dados.columns = ["Nacionalidade", "Quantidade"]
     fig = px.pie(dados, names="Nacionalidade", values="Quantidade", title="Empresas por Nacionalidade")
     st.plotly_chart(fig)
@@ -176,56 +176,35 @@ def mostrar_graficos(df):
     with col8:
         grafico_empresa_nacionalidade(df) 
 
-def carregar_dados():
-    df = pd.read_csv('./data/anac.csv', encoding='latin-1', delimiter=';')
-
-    cols_to_numeric = [
-        "PASSAGEIROS PAGOS",
-        "PASSAGEIROS GRÁTIS",
-        "DECOLAGENS",
-        "HORAS VOADAS",
-        "COMBUSTÍVEL (LITROS)",
-        "BAGAGEM (KG)",
-        "ASSENTOS"
-    ]
-    
-    for col in cols_to_numeric:
-        if col in df.columns:
-            df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
-    return df
-
-import streamlit as st
-
 def aplicar_filtro_mensal(df):
-    meses_disponiveis = sorted(df["MÊS"].unique())
+    meses_disponiveis = sorted(df["mes"].unique())
     mes_selecionado = st.selectbox(
         "📅 Selecione o Mês: ",
         options=[0] + list(meses_disponiveis),
         format_func=lambda x: "Todos os Meses" if x == 0 else f"Mês {x}"
     )
     if mes_selecionado != 0:
-        df = df[df["MÊS"] == mes_selecionado]
-    return df, mes_selecionado
+        df = df[df["mes"] == mes_selecionado]
+    return df
 
 def mostrar_comparativo_mensal_percentual(df):
+    meses_disponiveis = sorted(df['mes'].unique())
+    df = df[df["mes"].isin(meses_disponiveis)]
 
-    meses_disponiveis = sorted(df['MÊS'].unique())
-    df = df[df["MÊS"].isin(meses_disponiveis)]
-
-    df_mes = df.groupby('MÊS').agg({
-        "PASSAGEIROS PAGOS": "sum",
-        "DECOLAGENS": "sum",
-        "COMBUSTÍVEL (LITROS)": "sum",
-        "CARGA PAGA (KG)": "sum"
+    df_mes = df.groupby('mes').agg({
+        "passageiros_pagos": "sum",
+        "decolagens": "sum",
+        "combustivel_litros": "sum",
+        "carga_paga_kg": "sum"
     }).reset_index()
 
-    df_mes = df_mes.sort_values('MÊS')
-    df_plot = df_mes.set_index('MÊS')
+    df_mes = df_mes.sort_values('mes')
+    df_plot = df_mes.set_index('mes')
     df_plot = df_plot.rename(columns={
-        "PASSAGEIROS PAGOS": "Passageiros",
-        "DECOLAGENS": "Voos",
-        "COMBUSTÍVEL (LITROS)": "Combustível (L)",
-        "CARGA PAGA (KG)": "Carga (Kg)"
+        "passageiros_pagos": "Passageiros",
+        "decolagens": "Voos",
+        "combustivel_litros": "Combustível (L)",
+        "carga_paga_kg": "Carga (Kg)"
     })
 
     scaler = MinMaxScaler()
