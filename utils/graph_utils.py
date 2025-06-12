@@ -2,6 +2,20 @@ import pandas as pd
 import plotly.express as px
 import streamlit as st
 from sklearn.preprocessing import MinMaxScaler
+from utils.database import get_all
+
+def aplicar_filtro_mensal():
+    df = get_all("RelatorioVoosDetalhado")
+    meses_disponiveis = sorted(df["mes"].unique())
+    with st.sidebar:
+        mes_selecionado = st.selectbox(
+            "📅 Selecione o Mês: ",
+            options=[0] + list(meses_disponiveis),
+            format_func=lambda x: "Todos os Meses" if x == 0 else f"Mês {x}"
+        )
+    if mes_selecionado != 0:
+        df = df[df["mes"] == mes_selecionado]
+    return df
 
 def calcular_total_passageiros(df):
     return df["passageiros_pagos"].sum() + df["passageiros_gratis"].sum()
@@ -174,18 +188,7 @@ def mostrar_graficos(df):
     with col7:
         grafico_valor_carga(df)  
     with col8:
-        grafico_empresa_nacionalidade(df) 
-
-def aplicar_filtro_mensal(df):
-    meses_disponiveis = sorted(df["mes"].unique())
-    mes_selecionado = st.selectbox(
-        "📅 Selecione o Mês: ",
-        options=[0] + list(meses_disponiveis),
-        format_func=lambda x: "Todos os Meses" if x == 0 else f"Mês {x}"
-    )
-    if mes_selecionado != 0:
-        df = df[df["mes"] == mes_selecionado]
-    return df
+        grafico_empresa_nacionalidade(df)  
 
 def mostrar_comparativo_mensal_percentual(df):
     meses_disponiveis = sorted(df['mes'].unique())
@@ -223,5 +226,6 @@ def mostrar_comparativo_mensal_percentual(df):
     st.dataframe(
         df_pct.style.format("{:.2f}%")
         .highlight_max(axis=0, color='lightgreen')
-        .highlight_min(axis=0, color='lightcoral')
+        .highlight_min(axis=0, color='lightcoral'),
+        use_container_width=True
     )

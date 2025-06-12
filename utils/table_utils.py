@@ -1,6 +1,6 @@
 import streamlit as st
 from unidecode import unidecode
-from utils.database import execute_query, format_filters, get_types, get_all
+from utils.database import format_filters, get_types, get_all
 
 def render_tables():
     filters = sidebar_filters()
@@ -58,7 +58,7 @@ def sidebar_filters():
     return filtros
 
 def filter_container(name, labels, table):
-    df = execute_query(f"SELECT * FROM {table}", df=True)
+    df = get_all(table)
     filters = {}
     prefix = clean_name(name)
     with st.expander(name):

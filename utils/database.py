@@ -55,6 +55,17 @@ def get_all(table, fields=["*"], filters=[]):
         query += " WHERE "+ format_filters(filters)
     df = execute_query(query, df=True)
     return df
+
+def get_count(table):
+    return execute_query(f"SELECT COUNT(*) FROM {table}", fetch=True)[0][0]
+
+def get_sum(table, fields):
+    query_fields = " + ".join(fields)
+    return execute_query(f"SELECT SUM({query_fields}) FROM {table}", fetch=True)[0][0]
+
+def get_mean(table, field):
+    return execute_query(f"SELECT AVG({field}) FROM {table}", fetch=True)[0][0]
+
     
 def create_tables():
     execute_query('''
@@ -264,14 +275,11 @@ def fill_voos(df):
     execute_query(query)
 
 def fill_tables(df):
-    empresas_count = execute_query("SELECT COUNT(*) FROM empresas", fetch=True)[0][0]
-    if empresas_count == 0:
+    if get_count("empresas") == 0:
         fill_empresas(df)
-    aeroportos_count = execute_query("SELECT COUNT(*) FROM aeroportos", fetch=True)[0][0]
-    if aeroportos_count == 0:
+    if get_count("aeroportos") == 0:
         fill_aeroportos(df)
-    voos_count = execute_query("SELECT COUNT(*) FROM voos", fetch=True)[0][0]
-    if voos_count == 0:
+    if get_count("voos") == 0:
         fill_voos(df)
 
 def create_views():
