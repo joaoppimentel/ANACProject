@@ -1,5 +1,5 @@
 import sqlite3
-import unidecode
+from unidecode import unidecode
 import pandas as pd
 
 def rename_columns(col, parentheses=True):
@@ -7,10 +7,10 @@ def rename_columns(col, parentheses=True):
     if parentheses:
         nome = nome.split('(')[-1].strip(')').strip()
     nome = nome.replace('(', '').replace(')', '')
-    nome = unidecode.unidecode(nome)
+    nome = unidecode(nome)
     return nome.replace(' ', '_')
 
-def execute_query(query, params=None, fetch=False, return_columns=False, db_path='anac.db'):
+def execute_query(query, params=None, fetch=False, return_columns=False, df=False, db_path='anac.db'):
     """
     Executa uma query no banco SQLite.
 
@@ -18,6 +18,8 @@ def execute_query(query, params=None, fetch=False, return_columns=False, db_path
         query (str): Comando SQL a ser executado.
         params (tuple, optional): Parâmetros para query parametrizada. Default é None.
         fetch (bool, optional): Se True, retorna os resultados da query (ex: SELECT). Default é False.
+        return_columns (bool, optional): Se True, retorna os resultados com o nome das colunas. Default é False.
+        df (bool, optional): Se True, retorna os resultados como dataframe. Default é False.
         db_path (str, optional): Caminho para o arquivo do banco SQLite. Default é 'anac.csv'
 
     Returns:
@@ -30,11 +32,13 @@ def execute_query(query, params=None, fetch=False, return_columns=False, db_path
                 cursor.execute(query, params)
             else:
                 cursor.execute(query)
-            if fetch:
-                columns = [desc[0] for desc in cursor.description]
+            if fetch or return_columns or df:
                 data = cursor.fetchall()
-                result = [dict(zip(columns, row)) for row in data]
-                if(return_columns):
+                if return_columns or df:
+                    columns = [desc[0] for desc in cursor.description]
+                    result = [dict(zip(columns, row)) for row in data]
+                    if df:
+                        result = pd.DataFrame(result)
                     return result
                 else:
                     return data
@@ -168,9 +172,9 @@ def fill_aeroportos(df):
     execute_query(query)
 
 def fill_voos(df):
-    empresas = execute_query("SELECT id, sigla FROM empresas", fetch=True, return_columns=True)
+    empresas = execute_query("SELECT id, sigla FROM empresas", return_columns=True)
     empresas = {row['sigla']:row['id'] for row in empresas}
-    aeroportos = execute_query("SELECT id, sigla FROM aeroportos", fetch=True, return_columns=True)
+    aeroportos = execute_query("SELECT id, sigla FROM aeroportos", return_columns=True)
     aeroportos = {row['sigla']:row['id'] for row in aeroportos}
 
     voos = df[["EMPRESA (SIGLA)","ANO", "MÊS", "AEROPORTO DE ORIGEM (SIGLA)", "AEROPORTO DE DESTINO (SIGLA)", "NATUREZA", "GRUPO DE VOO", "PASSAGEIROS PAGOS", "PASSAGEIROS GRÁTIS",
@@ -180,6 +184,7 @@ def fill_voos(df):
        "ASSENTOS", "PAYLOAD", "HORAS VOADAS", "BAGAGEM (KG)"]] 
 
     voos.columns = [rename_columns(col, parentheses=False) for col in voos.columns]
+    voos['horas_voadas'] = voos['horas_voadas'].str.replace(',','.').astype(float)
     voos_dict = voos.to_dict('index')
     
     values = []
@@ -266,7 +271,7 @@ def create_views():
     if not view_exists:
         execute_query('''CREATE VIEW RelatorioVoosDetalhado AS
                          SELECT
-                            v.id AS id_voo,
+                            v.id,
                             e.sigla AS sigla_empresa,
                             e.nome AS nome_empresa,
                             e.nacionalidade AS nacionalidade_empresa,
@@ -313,3 +318,16 @@ def create_views():
                             aeroportos AS ao ON v.aeroporto_origem_id = ao.id
                         JOIN
                             aeroportos AS ad ON v.aeroporto_destino_id = ad.id;''')
+        
+def get_types(table):
+    types = execute_query(f"PRAGMA table_info({table});", return_columns=True)
+    simplified = {}
+    for type in types:
+        simplified[type['name']] = type['type']
+    return simplified
+
+def format_filters(filters, suffix=""):
+    formated = []
+    for c, v in filters.items():
+        formated.append((f"{c+suffix} = '{v}'"))
+    return " AND ".join(formated)
