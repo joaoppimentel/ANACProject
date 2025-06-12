@@ -5,14 +5,13 @@ from utils.database import execute_query, format_filters, get_types
 def raw_tables():
     filters = sidebar_filters()
 
-    st.write(filters)
-
     st.header("Tabela Aeroportos")
     query = "SELECT * FROM aeroportos"
     if filters['aero']:
         query += " WHERE "+ format_filters(filters["aero"])
     df = execute_query(query, df=True)
-    st.dataframe(df)
+    st.dataframe(df, use_container_width=True, hide_index=True)
+    st.subheader("Aeroportos Encontrados: "+str(len(df)))
     st.divider()
 
     st.header("Tabela Empresas")
@@ -20,7 +19,8 @@ def raw_tables():
     if filters['emp']:
         query += " WHERE "+ format_filters(filters["emp"])
     df = execute_query(query, df=True)
-    st.dataframe(df)
+    st.dataframe(df, use_container_width=True, hide_index=True)
+    st.subheader("Empresas Encontradas: "+str(len(df)))
     st.divider()
 
     st.header("Tabela Completa")
@@ -40,8 +40,8 @@ def raw_tables():
     if voos_filter:
         query += " WHERE "+ " AND ".join(voos_filter)
     df = execute_query(query, df=True)
-    st.dataframe(df)
-    st.subheader("Voos Encontrados: "+str(df['id'].size))
+    st.dataframe(df, use_container_width=True, hide_index=True)
+    st.subheader("Voos Encontrados: "+str(len(df)))
     st.divider()
 
 def sidebar_filters():
