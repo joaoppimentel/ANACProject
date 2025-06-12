@@ -1,6 +1,6 @@
 import streamlit as st
 from unidecode import unidecode
-from utils.database import execute_query, format_filters, get_types, getAll
+from utils.database import execute_query, format_filters, get_types, get_all
 
 def render_tables():
     filters = sidebar_filters()
@@ -28,7 +28,7 @@ def print_table(table, filters, name=""):
     if not name:
         name = table.capitalize()
     st.header(f"Tabela {name}")
-    df = getAll(table, filters=filters)
+    df = get_all(table, filters=filters)
     st.dataframe(df, use_container_width=True, hide_index=True)
     st.subheader(f"Registros de {name} Encontrados : "+str(len(df)))
     st.divider()
