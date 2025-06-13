@@ -48,16 +48,19 @@ def execute_query(query, params=None, fetch=False, return_columns=False, df=Fals
         print(f"Erro ao executar a query: {e}")
         return None
     
-def get_all(table, fields=["*"], filters=[]):
+def get_all(table, fields=["*"], filters=[], df=True):
     fields = ", ".join(fields)
     query = f"SELECT {fields} FROM {table}"
     if filters:
         query += " WHERE "+ format_filters(filters)
-    df = execute_query(query, df=True)
+    df = execute_query(query, df=df)
     return df
 
-def get_count(table):
-    return execute_query(f"SELECT COUNT(*) FROM {table}", fetch=True)[0][0]
+def get_count(table, group_by=""):
+    query = f"SELECT COUNT(*) FROM {table}"
+    if group_by:
+        query += f" GROUP BY {group_by}"
+    return execute_query(query, fetch=True)[0][0]
 
 def get_sum(table, fields):
     query_fields = " + ".join(fields)
@@ -282,9 +285,11 @@ def fill_tables(df):
     if get_count("voos") == 0:
         fill_voos(df)
 
+def check_view(view):
+    return execute_query(f"SELECT name FROM sqlite_master WHERE type='view' AND name='{view}';", fetch=True)
+
 def create_views():
-    view_exists = execute_query("SELECT name FROM sqlite_master WHERE type='view' AND name='RelatorioVoosDetalhado';", fetch=True)
-    if not view_exists:
+    if not check_view("RelatorioVoosDetalhado"):
         execute_query('''CREATE VIEW RelatorioVoosDetalhado AS
                          SELECT
                             v.id,
@@ -334,6 +339,29 @@ def create_views():
                             aeroportos AS ao ON v.aeroporto_origem_id = ao.id
                         JOIN
                             aeroportos AS ad ON v.aeroporto_destino_id = ad.id;''')
+
+    if not check_view('RotasVoo'):
+        execute_query('''CREATE VIEW RotasVoo AS
+                         SELECT
+                            sigla_aeroporto_origem AS sigla_origem,
+                            nome_aeroporto_origem AS nome_origem,
+                            sigla_aeroporto_destino AS sigla_destino,
+                            nome_aeroporto_destino AS nome_destino
+                        FROM
+                            RelatorioVoosDetalhado;''')
+        
+    if not check_view('VariacaoMensal'):
+        execute_query('''CREATE VIEW VariacaoMensal AS
+                         SELECT
+                            mes,
+                            SUM(passageiros_pagos + passageiros_gratis) as passageiros,
+                            SUM(decolagens) AS decolagens,
+                            SUM(combustivel_litros) AS combustivel,
+                            SUM(carga_paga_kg + carga_gratis_kg) AS carga_kg
+                        FROM
+                            voos
+                        GROUP BY
+                            mes;''')
         
 def get_types(table):
     types = execute_query(f"PRAGMA table_info({table});", return_columns=True)
