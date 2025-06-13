@@ -38,7 +38,7 @@ def mostrar_big_numbers(ft):
     col9.metric("🪽Média de Combustível Por Voo", f"{(combustivel/voos):,.2f}")
 
 def grafico_natureza_voos(ft):
-    contagem = df["natureza"].value_counts().reset_index()
+    contagem = get_count("voos", group_by="natureza")
     contagem.columns = ["Tipo de Voo", "Quantidade"]
 
     color_map = {
@@ -55,38 +55,26 @@ def grafico_natureza_voos(ft):
     )
     st.plotly_chart(fig)
 
-def grafico_assentos_usados(df):
-    df["assentos"] = pd.to_numeric(df["assentos"], errors="coerce").fillna(0)
-    usados = df["passageiros_pagos"] + df["passageiros_gratis"]
-    totais = df["assentos"]
-    
-    media_ocupados = usados.mean()
-    media_totais = totais.mean()
-    media_vagos = media_totais - media_ocupados
-    
-    dados = pd.DataFrame({
-        "Situação": ["OCUPADOS", "VAGOS"],
-        "Média de Assentos": [media_ocupados, media_vagos]
-    })
+# def grafico_assentos_usados(ft):
+#     usados = get_sum("voos", fields=["passageiros_pagos", "passageiros_gratis"])
+#     usados_columns = ["Situação", "Média de Assentos"]
 
-    color_map = {
-        "OCUPADOS": "green",
-        "VAGOS": "red"
-    }
+#     color_map = {
+#         "OCUPADOS": "green",
+#         "VAGOS": "red"
+#     }
 
-    fig = px.pie(
-        dados,
-        names="Situação",
-        values="Média de Assentos",
-        title="Média de Ocupação de Assentos por Voo",
-        color="Situação",
-        color_discrete_map=color_map
-    )
-
-    st.plotly_chart(fig)
+#     fig = px.pie(usados,
+#         names="Situação",
+#         values="Média de Assentos",
+#         title="Média de Ocupação de Assentos por Voo",
+#         color="Situação",
+#         color_discrete_map=color_map
+#     )
+#     st.plotly_chart(fig)
 
 def grafico_destino_por_continente(df):
-    contagem = df["continente_aeroporto_destino"].value_counts().reset_index()
+    contagem = get_count("RelatorioVoosDetalhado", group_by="continente_aeroporto_destino")
     contagem.columns = ["Continente de Destino", "Quantidade de Voos"]
 
     color_map = {
@@ -107,33 +95,33 @@ def grafico_destino_por_continente(df):
     )
     st.plotly_chart(fig)
 
-def grafico_voos_por_empresa(df, top_n= 3):
-    voos_por_empresa = df.groupby("nome_empresa")["decolagens"].sum().sort_values(ascending=False)
+# def grafico_voos_por_empresa(df, top_n= 3):
+#     voos_por_empresa = df.groupby("nome_empresa")["decolagens"].sum().sort_values(ascending=False)
 
-    top_empresas = voos_por_empresa.head(top_n)
-    outras = voos_por_empresa.iloc[top_n:].sum()
+#     top_empresas = voos_por_empresa.head(top_n)
+#     outras = voos_por_empresa.iloc[top_n:].sum()
 
-    dados = top_empresas.copy()
-    if outras > 0:
-        dados["Outras"] = outras
+#     dados = top_empresas.copy()
+#     if outras > 0:
+#         dados["Outras"] = outras
 
-    dados = dados.reset_index()
-    dados.columns = ["Empresa", "Decolagens"]
+#     dados = dados.reset_index()
+#     dados.columns = ["Empresa", "Decolagens"]
 
-    fig = px.pie(dados, names="Empresa", values="Decolagens", title=f"Top {top_n} Empresas por Número de Voos")
-    st.plotly_chart(fig)
+#     fig = px.pie(dados, names="Empresa", values="Decolagens", title=f"Top {top_n} Empresas por Número de Voos")
+#     st.plotly_chart(fig)
 
 def grafico_grupo_voo(df):
-    dados = df.groupby(["natureza", "grupo_voo"]).size().reset_index(name="Quantidade")
+    dados = get_count("voos")
     fig = px.sunburst(dados, path=["natureza", "grupo_voo"], values="Quantidade",
     title="Distribuição por Natureza e Grupo de Voo")
     st.plotly_chart(fig)
 
-def grafico_empresa_nacionalidade(df):
-    dados = df["nacionalidade_empresa"].value_counts().reset_index()
-    dados.columns = ["Nacionalidade", "Quantidade"]
-    fig = px.pie(dados, names="Nacionalidade", values="Quantidade", title="Empresas por Nacionalidade")
-    st.plotly_chart(fig)
+# def grafico_empresa_nacionalidade(df):
+#     dados = df["nacionalidade_empresa"].value_counts().reset_index()
+#     dados.columns = ["Nacionalidade", "Quantidade"]
+#     fig = px.pie(dados, names="Nacionalidade", values="Quantidade", title="Empresas por Nacionalidade")
+#     st.plotly_chart(fig)
 
 def mostrar_graficos(df):
     st.subheader("📶 Gráficos")
@@ -141,38 +129,24 @@ def mostrar_graficos(df):
     col1, col2 = st.columns(2)
     with col1:
         grafico_natureza_voos(df)
-    with col2:
-        grafico_assentos_usados(df)
+    # with col2:
+    #     grafico_assentos_usados(df)
 
     col3, col4 = st.columns(2)
     with col3:
         grafico_destino_por_continente(df)
-    with col4:
-        grafico_voos_por_empresa(df)
+    # with col4:
+    #     grafico_voos_por_empresa(df)
 
     col5, col6 = st.columns(2)
     with col5:
         grafico_grupo_voo(df)
-    with col6:
-        grafico_empresa_nacionalidade(df)  
+    # with col6:
+    #     grafico_empresa_nacionalidade(df)  
 
 def mostrar_comparativo_mensal_percentual():
-    df = get_all(table="voos", fields=["mes", "passageiros_pagos", "decolagens", "combustivel_litros", "carga_paga_kg"]) 
-    df_mes = df.groupby('mes').agg({
-        "passageiros_pagos": "sum",
-        "decolagens": "sum",
-        "combustivel_litros": "sum",
-        "carga_paga_kg": "sum"
-    }).reset_index()
-
-    df_mes = df_mes.sort_values('mes')
+    df_mes = get_all(table="VariacaoMensal")
     df_plot = df_mes.set_index('mes')
-    df_plot = df_plot.rename(columns={
-        "passageiros_pagos": "Passageiros",
-        "decolagens": "Voos",
-        "combustivel_litros": "Combustível (L)",
-        "carga_paga_kg": "Carga (Kg)"
-    })
 
     scaler = MinMaxScaler()
     df_normalizado = pd.DataFrame(

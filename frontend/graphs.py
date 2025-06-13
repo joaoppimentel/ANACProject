@@ -18,4 +18,4 @@ with graphs:
 with flies_map:
     st.title("🗺️Mapa Voos🛫")
 
-    render_map()
+    # render_map()
