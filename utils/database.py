@@ -1,6 +1,7 @@
 import sqlite3
 from unidecode import unidecode
 import pandas as pd
+import streamlit as st
 
 def rename_columns(col, parentheses=True):
     nome = col.lower()
@@ -56,17 +57,33 @@ def get_all(table, fields=["*"], filters=[]):
     df = execute_query(query, df=True)
     return df
 
-def get_count(table):
-    return execute_query(f"SELECT COUNT(*) FROM {table}", fetch=True)[0][0]
+def get_count(table, filters=[]):
+    query = f"SELECT COUNT(*) FROM {table}"
+    if filters:
+        query += " WHERE "+ format_filters(filters)
+    return execute_query(query, fetch=True)[0][0]
 
-def get_sum(table, fields):
+def get_sum(table, fields, filters=[]):
     query_fields = " + ".join(fields)
-    return execute_query(f"SELECT SUM({query_fields}) FROM {table}", fetch=True)[0][0]
-
-def get_mean(table, field):
-    return execute_query(f"SELECT AVG({field}) FROM {table}", fetch=True)[0][0]
-
+    query = f"SELECT SUM({query_fields}) FROM {table}"
+    if filters:
+        query += " WHERE "+ format_filters(filters)
+    return execute_query(query, fetch=True)[0][0]
     
+def get_mean(table, field, filters=[]):
+    query = f"SELECT AVG({field}) FROM {table}"
+    if filters:
+        query += " WHERE "+ format_filters(filters)
+    return execute_query(query, fetch=True)[0][0]
+
+def get_unique(table, field, filters=[]):
+    query = f"SELECT DISTINCT {field} FROM {table} ORDER BY {field} ASC"
+    if filters:
+        query += " WHERE "+ format_filters(filters)
+    result = execute_query(query, fetch=True)
+    result = [item[0] for item in result]
+    return result
+
 def create_tables():
     execute_query('''
     CREATE TABLE IF NOT EXISTS empresas (
