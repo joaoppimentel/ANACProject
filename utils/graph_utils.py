@@ -2,97 +2,109 @@ import pandas as pd
 import plotly.express as px
 import streamlit as st
 from sklearn.preprocessing import MinMaxScaler
-from utils.database import get_all
+from utils.database import get_all, get_count, get_mean, get_sum, get_unique
 
 def aplicar_filtro_mensal():
-    df = get_all("RelatorioVoosDetalhado")
-    meses_disponiveis = sorted(df["mes"].unique())
+    meses = get_unique("voos", "mes")
     with st.sidebar:
         mes_selecionado = st.selectbox(
             "📅 Selecione o Mês: ",
-            options=[0] + list(meses_disponiveis),
+            options=[0] + (meses),
             format_func=lambda x: "Todos os Meses" if x == 0 else f"Mês {x}"
         )
-    if mes_selecionado != 0:
-        df = df[df["mes"] == mes_selecionado]
-    return df
+    if mes_selecionado == 0:
+        return {}
+    return {"mes": mes_selecionado}
 
-def calcular_total_passageiros(df):
-    return df["passageiros_pagos"].sum() + df["passageiros_gratis"].sum()
+def mostrar_big_numbers(ft):
+    st.subheader("📈 Big Numbers")
 
-def calcular_total_voos(df):
-    return df["decolagens"].sum()
+    col1, col2, col3 = st.columns(3)
+    col4, col5, col6  = st.columns(3)
+    col7, col8, col9 = st.columns(3)
+    
+    passageiros =  get_sum("voos", ["passageiros_pagos", "passageiros_gratis"], filters=ft)
+    voos = get_sum("voos", ["decolagens"], filters=ft)
+    combustivel = get_sum("voos", ["combustivel_litros"], filters=ft)
+    
+    col1.metric("👨‍👩‍👧‍👦Passageiros Totais", passageiros)
+    col2.metric("🛫Decolagens Totais", voos)
+    col3.metric("⏳Horas Voadas Totais", get_sum("voos", ["horas_voadas"], filters=ft))
+    col4.metric("⛽Combustível Total (L)", combustivel)
+    col5.metric("🗺️Distância Voada Total", get_sum("voos", ["distancia_voada_km"], filters=ft))
+    col6.metric("📦Carga Total", get_sum("voos", ["carga_paga_kg", "carga_gratis_kg", "correio_kg"], filters=ft))
+    col7.metric("📮Correio Total", get_sum("voos", ["correio_kg"], filters=ft))
+    col8.metric("🏔️Média de Passageiros Por Voo", f"{(passageiros/voos):,.2f}")
+    col9.metric("🪽Média de Combustível Por Voo", f"{(combustivel/voos):,.2f}")
 
-def calcular_total_horas_voadas(df):
-    return pd.to_numeric(df["horas_voadas"], errors="coerce").fillna(0).sum()
-
-def calcular_total_combustivel(df):
-    return df["combustivel_litros"].sum()
-
-def calcular_total_bagagem(df):
-    return df["bagagem_kg"].sum()
-
-def calcular_total_empresas(df):
-    return df["nome_empresa"].nunique()
-
-def media_passageiro_voo(df):
-    total_passageiros = calcular_total_passageiros(df)
-    total_voos = calcular_total_voos(df)
-    if total_voos == 0:
-        return 0
-    return total_passageiros / total_voos
-
-def media_combustivel_voo(df):
-    total_combustivel = calcular_total_combustivel(df)
-    total_voos = calcular_total_voos(df)
-    if total_voos == 0:
-        return 0
-    return total_combustivel / total_voos
-
-def calcular_total_aeroportos(df):
-    return df["nome_aeroporto_origem"].nunique()
-
-def  calcular_total_distancia(df):
-    return df["distancia_voada_km"].sum()
-
-def calcular_carga_total(df):
-    return (df["carga_paga_kg"] + df["carga_gratis_kg"] + df["correio_kg"]).sum()
-
-def calcular_correio_total(df):
-    return df["correio_kg"].sum()
-
-def grafico_natureza_voos(df):
+def grafico_natureza_voos(ft):
     contagem = df["natureza"].value_counts().reset_index()
     contagem.columns = ["Tipo de Voo", "Quantidade"]
-    fig = px.pie(contagem, names="Tipo de Voo", values="Quantidade", title="Distribuição de Voos por Natureza")
+
+    color_map = {
+        "DOMÉSTICA": "#4DA6FF",
+        "INTERNACIONAL": "#003366	"
+    }
+
+    fig = px.pie(contagem, 
+    names="Tipo de Voo", 
+    values="Quantidade", 
+    title="Distribuição de Voos por Natureza", 
+    color="Tipo de Voo", 
+    color_discrete_map=color_map
+    )
     st.plotly_chart(fig)
 
 def grafico_assentos_usados(df):
     df["assentos"] = pd.to_numeric(df["assentos"], errors="coerce").fillna(0)
     usados = df["passageiros_pagos"] + df["passageiros_gratis"]
     totais = df["assentos"]
-
+    
     media_ocupados = usados.mean()
     media_totais = totais.mean()
     media_vagos = media_totais - media_ocupados
-
+    
     dados = pd.DataFrame({
-        "Situação": ["Ocupados", "Vagos"],
+        "Situação": ["OCUPADOS", "VAGOS"],
         "Média de Assentos": [media_ocupados, media_vagos]
     })
- 
-    fig = px.pie(dados, names="Situação", values="Média de Assentos", title="Média de Ocupação de Assentos por Voo")
+
+    color_map = {
+        "OCUPADOS": "green",
+        "VAGOS": "red"
+    }
+
+    fig = px.pie(
+        dados,
+        names="Situação",
+        values="Média de Assentos",
+        title="Média de Ocupação de Assentos por Voo",
+        color="Situação",
+        color_discrete_map=color_map
+    )
+
     st.plotly_chart(fig)
 
 def grafico_destino_por_continente(df):
     contagem = df["continente_aeroporto_destino"].value_counts().reset_index()
     contagem.columns = ["Continente de Destino", "Quantidade de Voos"]
 
+    color_map = {
+        "AMÉRICA DO SUL": "#000080",
+        "AMÉRICA DO NORTE": "#008080",
+        "EUROPA": "#D678EB",
+        "ÁFRICA": "#000000",
+        "ÁSIA": "#F5EA21",
+        "OCEANIA": "#98F571"
+    }
+
     fig = px.pie(contagem,
                  names="Continente de Destino",
                  values="Quantidade de Voos",
-                 title="Distribuição de Voos por Continente de Destino")
-
+                 title="Distribuição de Voos por Continente de Destino",
+                 color="Continente de Destino",
+                 color_discrete_map=color_map
+    )
     st.plotly_chart(fig)
 
 def grafico_voos_por_empresa(df, top_n= 3):
@@ -111,30 +123,10 @@ def grafico_voos_por_empresa(df, top_n= 3):
     fig = px.pie(dados, names="Empresa", values="Decolagens", title=f"Top {top_n} Empresas por Número de Voos")
     st.plotly_chart(fig)
 
-def grafico_distribuicao_passageiros(df):
-    pagos = df["passageiros_pagos"].sum()
-    gratis = df["passageiros_gratis"].sum()
-
-    dados = pd.DataFrame({
-        "Tipo de Passageiro": ["Pagos", "Grátis"],
-        "Quantidade": [pagos, gratis]
-    })
-
-    fig = px.pie(dados, names="Tipo de Passageiro", values="Quantidade", title="Distribuição de Passageiros (Pagos vs Grátis)")
-    st.plotly_chart(fig)
-
 def grafico_grupo_voo(df):
     dados = df.groupby(["natureza", "grupo_voo"]).size().reset_index(name="Quantidade")
     fig = px.sunburst(dados, path=["natureza", "grupo_voo"], values="Quantidade",
     title="Distribuição por Natureza e Grupo de Voo")
-    st.plotly_chart(fig)
-
-def grafico_valor_carga(df):
-    dados = pd.DataFrame({
-    "Tipo de Carga": ["Paga", "Grátis"],
-    "Quantidade": [df["carga_paga_kg"].sum(), df["carga_gratis_kg"].sum()]
-})
-    fig = px.pie(dados, names="Tipo de Carga", values="Quantidade", title="Distribuição da Carga Transportada")
     st.plotly_chart(fig)
 
 def grafico_empresa_nacionalidade(df):
@@ -143,57 +135,29 @@ def grafico_empresa_nacionalidade(df):
     fig = px.pie(dados, names="Nacionalidade", values="Quantidade", title="Empresas por Nacionalidade")
     st.plotly_chart(fig)
 
-def mostrar_big_numbers(df):
-    st.subheader("📈 Big Numbers")
-
-    col1, col2, col3, col4 = st.columns(4)
-    col5, col6, col7, col8 = st.columns(4)
-    col9, col10, col11, col12 = st.columns(4)
-
-    col1.metric("👨‍👩‍👧‍👦Passageiros Totais", f"{calcular_total_passageiros(df):,}")
-    col2.metric("🛫Decolagens Totais", f"{calcular_total_voos(df):,}")
-    col3.metric("⏳Horas Voadas Totais", f"{calcular_total_horas_voadas(df):,.2f}")
-    col4.metric("⛽Combustível Total (L)", f"{calcular_total_combustivel(df):,}")
-    col5.metric("🧳Bagagens Totais (KG)", f"{calcular_total_bagagem(df):,}")
-    col6.metric("🗃️Empresas Ativas", f"{calcular_total_empresas(df):,}")
-    col7.metric("🏔️Média de Passageiros Por Voo", f"{media_passageiro_voo(df):,.2f}")
-    col8.metric("🪽Média de Combustível Por Voo", f"{media_combustivel_voo(df):,.2f}")
-    col9.metric("🚡Aeroportos Atendidos", f"{calcular_total_aeroportos(df):,}")
-    col10.metric("🗺️Distância Voada Total", f"{calcular_total_distancia(df):,}")
-    col11.metric("📦Carga Total", f"{calcular_carga_total(df):,}")
-    col12.metric("📮Correio Total", f"{calcular_correio_total(df):,}")
-
 def mostrar_graficos(df):
     st.subheader("📶 Gráficos")
 
     col1, col2 = st.columns(2)
     with col1:
-        grafico_assentos_usados(df)
+        grafico_natureza_voos(df)
     with col2:
-        grafico_destino_por_continente(df)
+        grafico_assentos_usados(df)
 
     col3, col4 = st.columns(2)
     with col3:
-        grafico_natureza_voos(df)
+        grafico_destino_por_continente(df)
     with col4:
-        grafico_distribuicao_passageiros(df)
+        grafico_voos_por_empresa(df)
 
     col5, col6 = st.columns(2)
     with col5:
-        grafico_voos_por_empresa(df)
+        grafico_grupo_voo(df)
     with col6:
-        grafico_grupo_voo(df)  
-
-    col7, col8 = st.columns(2)
-    with col7:
-        grafico_valor_carga(df)  
-    with col8:
         grafico_empresa_nacionalidade(df)  
 
-def mostrar_comparativo_mensal_percentual(df):
-    meses_disponiveis = sorted(df['mes'].unique())
-    df = df[df["mes"].isin(meses_disponiveis)]
-
+def mostrar_comparativo_mensal_percentual():
+    df = get_all(table="voos", fields=["mes", "passageiros_pagos", "decolagens", "combustivel_litros", "carga_paga_kg"]) 
     df_mes = df.groupby('mes').agg({
         "passageiros_pagos": "sum",
         "decolagens": "sum",

@@ -4,17 +4,16 @@ from utils.graph_utils import mostrar_big_numbers, mostrar_graficos, aplicar_fil
 
 big_numbers, graphs, flies_map = st.tabs(["Big Numbers", "Gráficos", "Mapa de Voos"])
 
-df = aplicar_filtro_mensal()
+ft = aplicar_filtro_mensal()
 with big_numbers:
     st.title("📈 Big Numbers📊")
 
-    mostrar_big_numbers(df)
-    st.dataframe(df)
+    mostrar_big_numbers(ft)
 with graphs:
     st.title("📈 Gráficos ANAC 📊")
-
-    mostrar_comparativo_mensal_percentual(df)
-    mostrar_graficos(df)
+    if not ft:
+      mostrar_comparativo_mensal_percentual()
+    mostrar_graficos(ft)
 
 with flies_map:
     st.title("🗺️Mapa Voos🛫")
