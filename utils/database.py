@@ -83,9 +83,10 @@ def get_mean(table, field, filters=[]):
     return execute_query(query, fetch=True)[0][0]
 
 def get_unique(table, field, filters=[]):
-    query = f"SELECT DISTINCT {field} FROM {table} ORDER BY {field} ASC"
+    query = f"SELECT DISTINCT {field} FROM {table}"
     if filters:
         query += " WHERE "+ format_filters(filters)
+    query += f" ORDER BY {field} ASC"
     result = execute_query(query, fetch=True)
     result = [item[0] for item in result]
     return result
@@ -363,10 +364,15 @@ def create_views():
     if not check_view('RotasVoo'):
         execute_query('''CREATE VIEW RotasVoo AS
                          SELECT
+                            mes,
                             sigla_aeroporto_origem AS sigla_origem,
                             nome_aeroporto_origem AS nome_origem,
+                            continente_aeroporto_origem AS continente_origem,
+                            pais_aeroporto_origem AS pais_origem,
                             sigla_aeroporto_destino AS sigla_destino,
-                            nome_aeroporto_destino AS nome_destino
+                            nome_aeroporto_destino AS nome_destino,
+                            continente_aeroporto_destino AS continente_destino,
+                            pais_aeroporto_destino AS pais_destino
                         FROM
                             RelatorioVoosDetalhado;''')
         

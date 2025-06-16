@@ -139,7 +139,7 @@ def grafico_voos_por_empresa(df, top_n=3):
     st.plotly_chart(fig)
 
 def mostrar_big_numbers(df):
-    st.subheader("📈 Big Numbers")
+    st.title("📈 Big Numbers")
 
     col1, col2, col3 = st.columns(3)
     col4, col5, col6 = st.columns(3)
@@ -156,7 +156,6 @@ def mostrar_big_numbers(df):
     col9.metric("📮Correio Total", f"{calcular_correio_total(df):,}")
 
 def mostrar_graficos(df):
-    st.subheader("📶 Gráficos")
 
     col1, col2 = st.columns(2)
     with col1:
@@ -185,7 +184,7 @@ def aplicar_filtro_mensal(df):
     )
     if mes_selecionado != 0:
         df = df[df["mes"] == mes_selecionado]
-    return df
+    return df, mes_selecionado
 
 def mostrar_comparativo_mensal_percentual(df):
     meses_disponiveis = sorted(df['mes'].unique())
