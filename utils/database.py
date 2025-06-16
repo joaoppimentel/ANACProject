@@ -58,11 +58,15 @@ def get_all(table, fields=["*"], filters=[], df=True):
     return df
 
 def get_count(table, filters=[], group_by=""):
-    query = f"SELECT COUNT(*) FROM {table}"
+    query = f"SELECT "
+    if group_by:
+        query += f"{group_by}, "
+    query += f"COUNT(*) FROM {table}"
     if filters:
         query += " WHERE "+ format_filters(filters)
     if group_by:
         query += f" GROUP BY {group_by}"
+        return execute_query(query, df=True)
     return execute_query(query, fetch=True)[0][0]
 
 def get_sum(table, fields, filters=[]):
@@ -370,10 +374,10 @@ def create_views():
         execute_query('''CREATE VIEW VariacaoMensal AS
                          SELECT
                             mes,
-                            SUM(passageiros_pagos + passageiros_gratis) as passageiros,
-                            SUM(decolagens) AS decolagens,
-                            SUM(combustivel_litros) AS combustivel,
-                            SUM(carga_paga_kg + carga_gratis_kg) AS carga_kg
+                            SUM(passageiros_pagos + passageiros_gratis) AS Passageiros,
+                            SUM(decolagens) AS Decolagens,
+                            SUM(combustivel_litros) AS Combustivel,
+                            SUM(carga_paga_kg + carga_gratis_kg) AS 'Carga'
                         FROM
                             voos
                         GROUP BY
