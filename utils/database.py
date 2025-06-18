@@ -354,11 +354,11 @@ def create_views():
                             v.bagagem_kg
                         FROM
                             voos AS v
-                        JOIN
+                        INNER JOIN
                             empresas AS e ON v.empresa_id = e.id
-                        JOIN
+                        INNER JOIN
                             aeroportos AS ao ON v.aeroporto_origem_id = ao.id
-                        JOIN
+                        INNER JOIN
                             aeroportos AS ad ON v.aeroporto_destino_id = ad.id;''')
 
     if not check_view('RotasVoo'):
