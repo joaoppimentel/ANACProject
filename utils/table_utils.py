@@ -1,6 +1,6 @@
 import streamlit as st
 from unidecode import unidecode
-from utils.database import format_filters, get_types, get_all
+from utils.database import format_filters, get_all
 
 def render_tables():
     filters = sidebar_filters()
@@ -71,11 +71,7 @@ def filter_container(name, labels, table):
             for l in labels:
                 low_name = clean_name(l)
                 tmp_ft = selectbox(l, df, prefix)
-                types = get_types(table)
                 if tmp_ft:
-                   if types[low_name] == "INTEGER":
-                    filters[low_name] = tmp_ft
-                   else:
                     filters[low_name] = tmp_ft
     return filters
 
