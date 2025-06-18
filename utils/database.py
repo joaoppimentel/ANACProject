@@ -388,13 +388,6 @@ def create_views():
                             voos
                         GROUP BY
                             mes;''')
-        
-def get_types(table):
-    types = execute_query(f"PRAGMA table_info({table});", return_columns=True)
-    simplified = {}
-    for type in types:
-        simplified[type['name']] = type['type']
-    return simplified
 
 def format_filters(filters, suffix=""):
     formated = []
